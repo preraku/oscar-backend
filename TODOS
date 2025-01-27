@@ -1,0 +1,15 @@
+TODOS
+
+- [ ] Add a user table
+- [ ] Make the verification a middleware that uses c.set("user_id")
+- [ ] Consider bcryptjs for password hashing: https://www.npmjs.com/package/bcryptjs
+  - https://github.com/mapbox/node-pre-gyp/issues/661
+- [ ] Intialize the movies table upon signup
+- [ ] Hit the API with a browser (use the html page I made).
+- [ ] Consider adding a version number to each movie entry upon creation and update.
+  - Then, we can use version numbers to do optimistic locking.
+- [ ] Consider adding chanfana for validation.
+  - https://github.com/cloudflare/chanfana
+  - https://massadas.com/posts/implementing-register-and-login-in-workers-d1/
+- [ ] Write tests
+- [ ] user.id does nothing.
