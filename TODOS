@@ -35,6 +35,8 @@ TODOS
 - [ ] on successful login/signup, reset error/seterror.
 - [ ] Add a "Years" page that lists all years. Or, give the user a dropdown to select a year.
 - [ ] Rename everything from "my-app" to "oscar-backend".
+- [ ] Convert username to lowercase in backend
+- [ ] Have browser autosuggest password.
 
 on login, pull user's movies and overwrite local.
 on signup, push local movies to kv.

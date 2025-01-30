@@ -179,7 +179,7 @@ const parseAuthBody = async (c: Context): Promise<AuthBody | null> => {
   ) {
     return null;
   }
-  return authBody as AuthBody;
+  return { username: username.toLowerCase(), password } as AuthBody;
 };
 
 app.post("/auth/signup", async (c) => {
