@@ -15,7 +15,7 @@ export interface Env {
   JWT_SECRET_KEY: string;
   ADMIN_USERNAME: string;
   ADMIN_PASSWORD: string;
-  SALT_ROUNDS: number;
+  SALT_ROUNDS: string;
   USERS: KVNamespace;
   MOVIES: KVNamespace;
 }
@@ -46,12 +46,19 @@ const tokenKey = (c: Context): string => {
   const key = c.env.JWT_SECRET_KEY ?? "DEV-SUPA-SEKIT";
   return key;
 };
+const totalMoviesPerYear: Record<string, number> = {
+  "2024": 53,
+};
+
+const defaultMovies: Record<number, number[]> = {
+  "2024": [],
+};
+
+const stringifiedDefaultMovies = JSON.stringify(defaultMovies);
 
 // https://hono.dev/docs/middleware/builtin/cors
 app.use("*", cors());
 
-// TODO: Add a middleware to check if the user is logged in
-// TODO: Add a middleware to check the body is valid JSON and has `username` and `password`
 app.post("/auth/login", async (c) => {
   const body = await parseAuthBody(c);
   if (!body) {
@@ -61,13 +68,14 @@ app.post("/auth/login", async (c) => {
   const userJson = await c.env.USERS.get(username);
   const user = userJson ? (JSON.parse(userJson) as KVUser) : null;
   if (user === null) {
-    return c.json({ ok: false, message: "Login failed" }, 401);
+    return c.json({ ok: false, message: "Login failed. User not found" }, 401);
   }
   const passwordCorrect = await compare(password, user.passwordHash);
-  // const passwordHash = await generatePasswordHash(password);
-  // const passwordCorrect = passwordHash === user.passwordHash;
   if (!passwordCorrect) {
-    return c.json({ ok: false, message: "Login failed" }, 401);
+    return c.json(
+      { ok: false, message: "Login failed. Password incorrect" },
+      401
+    );
   }
 
   const userForToken: userToken = {
@@ -85,11 +93,11 @@ app.post("/auth/login", async (c) => {
 });
 
 const generatePasswordHash = async (password: string, c: Context) => {
-  // const hashAlgo = crypto.createHash("sha512");
-  // hashAlgo.update(password);
-  // const passwordHash = hashAlgo.digest("hex");
-  // return passwordHash;
-  return await hash(password, c.env.SALT_ROUNDS);
+  const saltRounds = Number(c.env.SALT_ROUNDS);
+  if (isNaN(saltRounds)) {
+    throw new Error("SALT_ROUNDS must be a valid number");
+  }
+  return await hash(password, saltRounds);
 };
 
 const generateToken = (username: string, id: string, c: Context) => {
@@ -97,7 +105,6 @@ const generateToken = (username: string, id: string, c: Context) => {
     username,
     id,
   };
-  // Might need to use JSON.stringify(userForToken)
   const token = jwt.sign(userForToken, tokenKey(c));
   return token;
 };
@@ -196,29 +203,35 @@ app.post("/auth/signup", async (c) => {
   const id = crypto.randomUUID();
   const userData: KVUser = { id, username, passwordHash };
   await c.env.USERS.put(username, JSON.stringify(userData));
-  await c.env.MOVIES.put(username, JSON.stringify({}));
+  await c.env.MOVIES.put(username, stringifiedDefaultMovies);
   const token = generateToken(username, id, c);
   return c.json({ ok: true, message: "User created", token }, 201);
 });
 
-app.get("/auth/test", async (c) => {
-  const username = "foo";
-  const password = "bar";
-  const id = crypto.randomUUID();
-  const passwordHash = await generatePasswordHash(password, c);
-  const token = generateToken(username, id, c);
-  return c.json({
-    ok: true,
-    message: "Token valid",
-    id,
-    username,
-    password,
-    passwordHash,
-    token,
-  });
-});
+// app.get("/auth/test", async (c) => {
+//   const username = "foo";
+//   const password = "bar";
+//   const id = crypto.randomUUID();
+//   const passwordHash = await generatePasswordHash(password, c);
+//   const token = generateToken(username, id, c);
+//   const env = c.env;
+//   return c.json({
+//     ok: true,
+//     message: "Token valid",
+//     id,
+//     username,
+//     password,
+//     passwordHash,
+//     token,
+//     env,
+//   });
+// });
 
 app.get("/api/v1/movies", async (c) => {
+  const year = c.req.query("year");
+  if (!year || !Object.keys(defaultMovies).includes(year)) {
+    return c.json({ ok: false, message: "Valid year required" }, 400);
+  }
   const decodedToken = verifyAndDecodeToken(c);
   if (!decodedToken.ok) {
     return c.json({ ok: false, message: decodedToken.message }, 401);
@@ -226,12 +239,50 @@ app.get("/api/v1/movies", async (c) => {
   const username = decodedToken.decodedToken!.username;
   let movies = await c.env.MOVIES.get(username);
   if (!movies) {
-    // Create a new KV namespace for the user
-    await c.env.MOVIES.put(username, JSON.stringify({}));
-    movies = JSON.stringify({});
+    await c.env.MOVIES.put(username, stringifiedDefaultMovies);
+    return c.json([]);
   }
-  return c.json(movies);
+  const parsedMovies = JSON.parse(movies);
+  if (Array.isArray(parsedMovies)) {
+    // Migrating from pre-release format to new format.
+    await c.env.MOVIES.put(username, stringifiedDefaultMovies);
+    return c.json([]);
+  }
+  let modifiedMovies = false;
+  // For each year in defaultMovies, check if the user's movies has that key. If not, add it with an empty array.
+  Object.keys(defaultMovies).forEach((year) => {
+    if (!parsedMovies[year]) {
+      parsedMovies[year] = [];
+      modifiedMovies = true;
+    }
+  });
+  if (modifiedMovies) {
+    await c.env.MOVIES.put(username, JSON.stringify(parsedMovies));
+  }
+  const yearMovies = parsedMovies[year];
+  return c.json(yearMovies);
 });
+
+const validatePostedMovies = (postedMovies: any, year: string) => {
+  if (!year || !Object.keys(defaultMovies).includes(year)) {
+    return null;
+  }
+  if (!postedMovies || !Array.isArray(postedMovies)) {
+    return null;
+  }
+  for (const movie of postedMovies) {
+    if (typeof movie !== "number" || !Number.isInteger(movie)) {
+      return null;
+    }
+  }
+  const movies = postedMovies as number[];
+  const totalMovies = totalMoviesPerYear[year];
+  if (movies.find((movie) => movie < 1 || movie > totalMovies)) {
+    return null;
+  }
+  // Ensure uniqueness
+  return new Set(movies);
+};
 
 app.post("/api/v1/movies", async (c) => {
   const decodedToken = verifyAndDecodeToken(c);
@@ -243,44 +294,21 @@ app.post("/api/v1/movies", async (c) => {
   if (!body || !Array.isArray(body.movies)) {
     return c.json({ ok: false, message: "Invalid JSON" }, 400);
   }
-  let { movies } = body;
-  await c.env.MOVIES.put(username, JSON.stringify(movies));
+  let { movies, year } = body;
+  const validatedMovies = validatePostedMovies(movies, year);
+  if (!validatedMovies) {
+    return c.json({ ok: false, message: "Invalid movies" }, 400);
+  }
+  // Get the user's movies and update them with the new movies.
+  const userMovies = await c.env.MOVIES.get(username);
+  let parsedUserMovies = userMovies ? JSON.parse(userMovies) : defaultMovies;
+  parsedUserMovies[year] = Array.from(validatedMovies);
+  await c.env.MOVIES.put(username, JSON.stringify(parsedUserMovies));
   return c.json({ ok: true, message: "Movies created" }, 201);
 });
 
 app.get("/", (c) => {
-  return c.text("Hello Hono!");
-});
-
-app.get("/api/v1/hello", (c) => {
-  return c.json({
-    ok: true,
-    message: "Hello Hono!",
-  });
-});
-
-app.get("/api/v1/posts/:id", (c) => {
-  const page = c.req.query("page");
-  const id = c.req.param("id");
-  c.header("X-Message", "Hi!");
-  return c.text(`You want to see page ${page} of ${id}`);
-});
-
-app.post("/api/v1/posts", (c) => c.text("Created!", 201));
-app.delete("/posts/:id", (c) => c.text(`${c.req.param("id")} is deleted!`));
-
-// const View = () => {
-//   return (
-//     <html>
-//       <body>
-//         <h1>Hello Hono!</h1>
-//       </body>
-//     </html>
-//   );
-// };
-// app.get("/page", (c) => c.html(<View />));
-app.get("/raw", () => {
-  return new Response("Good morning!");
+  return c.text("Hello!");
 });
 
 app.use("/admin/*", async (ctx: Context, next: any) => {
@@ -303,6 +331,28 @@ app.delete("/admin/user/:username", async (c) => {
   await c.env.USERS.delete(username);
   await c.env.MOVIES.delete(username);
   return c.json({ ok: true, message: "User deleted" }, 200);
+});
+
+app.get("/admin/users", async (c) => {
+  const usersList = await c.env.USERS.list();
+  const users = await Promise.all(
+    usersList.keys.map(async (key) => {
+      const value = await c.env.USERS.get(key.name);
+      return { key: key.name, value };
+    })
+  );
+  return c.json(users);
+});
+
+app.get("/admin/movies", async (c) => {
+  const moviesList = await c.env.MOVIES.list();
+  const movies = await Promise.all(
+    moviesList.keys.map(async (key) => {
+      const value = await c.env.MOVIES.get(key.name);
+      return { key: key.name, value };
+    })
+  );
+  return c.json(movies);
 });
 
 export default app;
