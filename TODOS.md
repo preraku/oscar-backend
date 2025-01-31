@@ -1,43 +1,51 @@
-TODOS
+# TODOS
 
-- [ ] Add a user table
-- [ ] Make the verification a middleware that uses c.set("user_id")
-- [ ] Add a middleware to check if the user is logged in
-- [ ] Consider bcryptjs for password hashing: https://www.npmjs.com/package/bcryptjs
-  - https://github.com/mapbox/node-pre-gyp/issues/661
-- [ ] Investigate removing nodejs_compat. It probably slows things down.
-- [ ] Intialize the movies table upon signup
-- [ ] Hit the API with a browser (use the html page I made).
+- [ ] Refactor code to be more modular.
+- [ ] Don't let user enter blank password.
 - [ ] Consider adding a version number to each movie entry upon creation and update.
   - Then, we can use version numbers to do optimistic locking.
+- [ ] Investigate removing nodejs_compat. It probably slows things down.
+- [ ] Make the verification a middleware that uses c.set("user_id")
+- [ ] Add a middleware to check if the user is logged in
 - [ ] Consider adding chanfana for validation. Consider z/zod. This is already being used in the chanfana example, so I'm not sure what z does or what chanfana does. I have heard of z before.
   - https://github.com/cloudflare/chanfana
   - https://massadas.com/posts/implementing-register-and-login-in-workers-d1/
 - [ ] Write tests (use Jest or Vitest, probably.)
 - [ ] user.id does nothing.
-- [ ] Add log out function to html page
-- [ ] Log user out before they sign up
-- [ ] When writing movies:
-  - [ ] Make it a set
-  - [ ] Ignore invalid movies: Not numbers, not integers, too small, too large.
-- [ ] Might need to make loadWatchedMovies a hook... Not sure what I meant. I think I meant make it use useEffect because it's a side effect that runs on load.
 - [ ] Batch post and get requests to kv. Consider rate limits at some level. Consider queueing (overkill for this, but would be fun to implement).
 - [ ] Consider adding a pull to the frontend.
 - [ ] Get the props validation to work. e.g. I added movies to the props of the Stats component, but not to the callers. There was no error in IDE. (Might be as simple as moving prototypes back to App.jsx). Consider whether TypeScript is a better fit for this project.
 - [ ] Support proper routing using react-router's BrowserRouter. This is tough on GH Pages. I don't fully trust that these instructions work for me: https://github.com/rafgraph/spa-github-pages?tab=readme-ov-file. https://create-react-app.dev/docs/deployment/#notes-on-client-side-routing.
-- [ ] Make a list of code to be updated to add a new year. Maybe make an abandoned branch or PR.
+- [ ] Make documentation of code to be updated to add a new year. Maybe make an abandoned branch or PR.
 - [ ] Consider that the keys of the movies map may be strings.
-- [ ] Use CF secrets for the admin user and password.
-- [ ] Use CF secrets for the jwt secret.
 - [ ] Make the JWT token verification async.
 - [ ] Make gets from KV use the JSON type to reduce parsing.
-- [ ] Move repo from my-app to oscars-backend.
 - [ ] on successful login/signup, reset error/seterror.
 - [ ] Add a "Years" page that lists all years. Or, give the user a dropdown to select a year.
 - [ ] Rename everything from "my-app" to "oscar-backend".
-- [ ] Convert username to lowercase in backend
-- [ ] Have browser autosuggest password.
+- [ ] Add 2025 movies
+- [ ] CI/CD with GitHub Actions.
+  - Support test runner
+  - https://developers.cloudflare.com/workers/ci-cd/
 
-on login, pull user's movies and overwrite local.
-on signup, push local movies to kv.
-on logout, clear local movies.
+---
+
+- [x] Add a user table
+- [x] Consider bcryptjs for password hashing: https://www.npmjs.com/package/bcryptjs
+  - https://github.com/mapbox/node-pre-gyp/issues/661
+- [x] Intialize the movies table upon signup
+- [x] Hit the API with a browser (use the html page I made).
+- [x] Add log out function to html page
+- [x] Log user out before they sign up
+- [x] When writing movies:
+  - [x] Make it a set
+  - [x] Ignore invalid movies: Not numbers, not integers, too small, too large.
+- [x] Might need to make loadWatchedMovies a hook... Not sure what I meant. I think I meant make it use useEffect because it's a side effect that runs on load.
+- [x] Use CF secrets for the admin user and password.
+- [x] Use CF secrets for the jwt secret.
+- [x] Move repo from my-app to oscars-backend.
+- [x] Convert username to lowercase in backend
+- [x] Have browser autosuggest password.
+- [x] on login, pull user's movies and overwrite local.
+- [x] on signup, push local movies to kv.
+- [x] on logout, clear local movies.
