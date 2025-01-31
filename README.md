@@ -10,6 +10,12 @@ Set up for development:
 4. Run `bun install`
 5. Create a `.dev.vars` file in the root of the repo. (e.g. `oscars-backend/.dev.vars`). It should look like the following:
 
+> [!TIP]
+> npm is perfectly valid and can be used instead of bun wherever bun is mentioned.
+
+> [!TIP]
+> I highly recommend installing [Bruno](https://www.usebruno.com/) to help with API development. It's basically Postman, but free. It isn't required, but it's a great tool.
+
 ```
 [vars]
 JWT_SECRET_KEY=my_jwt_secret_key
