@@ -48,10 +48,14 @@ const tokenKey = (c: Context): string => {
 };
 const totalMoviesPerYear: Record<string, number> = {
   "2024": 53,
+  "2025": 49,
+  "2026": 50,
 };
 
 const defaultMovies: Record<number, number[]> = {
   "2024": [],
+  "2025": [],
+  "2026": [],
 };
 
 const stringifiedDefaultMovies = JSON.stringify(defaultMovies);
