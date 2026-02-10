@@ -2,7 +2,8 @@
   "name": "my-app",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "deploy": "wrangler deploy --minify",
+    "test": "bun test"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
