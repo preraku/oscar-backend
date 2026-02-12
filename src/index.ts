@@ -41,6 +41,8 @@ interface AuthBody {
 }
 
 const app = new Hono<{ Bindings: Env }>();
+const utf8Encoder = new TextEncoder();
+const MAX_BCRYPT_PASSWORD_BYTES = 72;
 
 const tokenKey = (c: Context): string => {
   const key = c.env.JWT_SECRET_KEY ?? "DEV-SUPA-SEKIT";
@@ -195,6 +197,16 @@ app.post("/auth/signup", async (c) => {
   if (!username || !password) {
     return c.json(
       { ok: false, message: "`username` and `password` required" },
+      400
+    );
+  }
+  const passwordByteLength = utf8Encoder.encode(password).byteLength;
+  if (passwordByteLength > MAX_BCRYPT_PASSWORD_BYTES) {
+    return c.json(
+      {
+        ok: false,
+        message: "Password is too long. Please choose a shorter password.",
+      },
       400
     );
   }
